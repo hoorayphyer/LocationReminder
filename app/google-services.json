@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "236624104111",
+    "project_id": "hooray-location-reminder",
+    "storage_bucket": "hooray-location-reminder.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:236624104111:android:27736ee3af91108fee625a",
+        "android_client_info": {
+          "package_name": "com.udacity.project4"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "236624104111-fm9an99sn98tibrpjb0s8sg2i2os2gth.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.udacity.project4",
+            "certificate_hash": "529da935b3c8f769fbe6eb7b6bf786cd20c81c47"
+          }
+        },
+        {
+          "client_id": "236624104111-hhm35gf2iks35pcahaqlmoommonqb0pp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB0ewAPmuCEP-X1liEGnC95z0Kp9uPvE_4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "236624104111-hhm35gf2iks35pcahaqlmoommonqb0pp.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
