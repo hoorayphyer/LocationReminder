@@ -30,7 +30,7 @@ class RemindersListViewModel(
                 is Result.Success<*> -> {
                     val dataList = ArrayList<ReminderDataItem>()
                     dataList.addAll((result.data as List<ReminderDTO>).map { reminder ->
-                        //map the reminder data from the DB to the be ready to be displayed on the UI
+                        //map the reminder data from the DB to be ready to be displayed on the UI
                         ReminderDataItem(
                             reminder.title,
                             reminder.description,

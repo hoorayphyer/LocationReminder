@@ -1,14 +1,9 @@
 package com.udacity.project4.locationreminders
 
-import android.Manifest
-import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.navigation.findNavController
-import androidx.navigation.fragment.NavHostFragment
 import com.udacity.project4.R
 import com.udacity.project4.databinding.ActivityRemindersBinding
 
