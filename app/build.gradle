@@ -1,3 +1,9 @@
+// plugins block is a newer method than apply plugin
+plugins {
+    // manage googlemap api
+    id 'com.google.android.libraries.mapsplatform.secrets-gradle-plugin'
+}
+
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
