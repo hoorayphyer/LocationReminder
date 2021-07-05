@@ -19,20 +19,10 @@ import com.udacity.project4.base.BaseFragment
 import com.udacity.project4.base.NavigationCommand
 import com.udacity.project4.databinding.FragmentSaveReminderBinding
 import com.udacity.project4.locationreminders.geofence.GeofenceBroadcastReceiver
+import com.udacity.project4.locationreminders.geofence.GeofencingConstants
 import com.udacity.project4.locationreminders.reminderslist.ReminderDataItem
 import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
 import org.koin.android.ext.android.inject
-import java.util.concurrent.TimeUnit
-
-internal object GeofencingConstants {
-    /**
-     * Used to set an expiration time for a geofence. After this amount of time, Location services
-     * stops tracking the geofence. For this sample, geofences expire after one hour.
-     */
-    val GEOFENCE_EXPIRATION_IN_MILLISECONDS: Long = TimeUnit.HOURS.toMillis(1)
-    const val GEOFENCE_RADIUS_IN_METERS = 100f
-    const val LOGTAG = "LocationReminderGeofence"
-}
 
 class SaveReminderFragment : BaseFragment() {
     //Get the view model this time as a single to be shared with the another fragment
