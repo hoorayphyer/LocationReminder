@@ -6,9 +6,11 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
 import android.view.*
+import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
+import androidx.navigation.fragment.findNavController
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -33,6 +35,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
 
     private var locationPermissionGranted = false
+    private var selectedPOI : PointOfInterest? = null
 
     companion object {
         private const val PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1
@@ -59,16 +62,22 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
             childFragmentManager.findFragmentById(binding.googleMap.id) as SupportMapFragment
         mapFragment.getMapAsync(this) // calling onMapReady()
 
-//        TODO: call this function after the user confirms on the selected location
-        onLocationSelected()
+        // Add clickListener to the confirmButton
+        binding.confirmButton.setOnClickListener {
+            // When the user confirms on the selected location,
+            // send back the selected location details to the view model
+            // and navigate back to the previous fragment to save the reminder and add the geofence
+            if (selectedPOI == null) {
+                Toast.makeText(requireContext(), "No POI is selected!", Toast.LENGTH_LONG).show()
+            } else {
+                _viewModel.reminderSelectedLocationStr.value = selectedPOI!!.name.toString()
+                _viewModel.latitude.value = selectedPOI!!.latLng.latitude
+                _viewModel.longitude.value = selectedPOI!!.latLng.longitude
+                findNavController().popBackStack()
+            }
+        }
 
         return binding.root
-    }
-
-    private fun onLocationSelected() {
-        //        TODO: When the user confirms on the selected location,
-        //         send back the selected location details to the view model
-        //         and navigate back to the previous fragment to save the reminder and add the geofence
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
@@ -106,9 +115,25 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         updateMapUISettings()
 
         // Move camera to the current location of the device and set the position of the map.
-        // NOTE there is a callback function that's called when query of current location comes back, so we have to put moveCamara code there
-        moveToDeviceLocation()
+        getDeviceLocation {
+            val zoomLevel = 15f
+            map.moveCamera(CameraUpdateFactory.newLatLngZoom(it, zoomLevel))
+            // put a marker to location that the user selected
+            map.addMarker(MarkerOptions().position(it))
 
+            Toast.makeText(requireContext(), "Click on a POI to set a reminder", Toast.LENGTH_LONG).show()
+        }
+
+        map.setOnPoiClickListener { poi ->
+            val poiMarker = map.addMarker(
+                MarkerOptions()
+                    .position(poi.latLng)
+                    .title(poi.name)
+            )
+            poiMarker.showInfoWindow()
+
+            selectedPOI = poi
+        }
     }
 
     /**
@@ -177,7 +202,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     /**
      * Gets the current location of the device, and positions the map's camera.
      */
-    private fun moveToDeviceLocation() {
+    private fun getDeviceLocation(callback : (LatLng) -> Unit) {
         /*
          * Get the best and most recent location of the device, which may be null in rare
          * cases when a location is not available.
@@ -196,10 +221,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
                     map.uiSettings.isMyLocationButtonEnabled = false
                 }
 
-                val zoomLevel = 15f
-                map.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, zoomLevel))
-                // put a marker to location that the user selected
-                map.addMarker(MarkerOptions().position(latLng))
+                callback(latLng)
             }
         } catch (e: SecurityException) {
             Log.e("Exception: %s", e.message, e)

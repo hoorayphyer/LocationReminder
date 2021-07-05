@@ -10,13 +10,11 @@
         android:id="@+id/loginButton"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:backgroundTint="@color/colorAccent"
         android:text="LOG IN"
-        android:textColor="@color/white"
-        android:textSize="20sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        style="@style/button" />
 
     <TextView
         android:id="@+id/textView"
