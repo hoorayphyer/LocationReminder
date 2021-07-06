@@ -13,15 +13,24 @@ class FakeDataSource( private val reminders : MutableList<ReminderDTO>) : Remind
     }
 
     override suspend fun saveReminder(reminder: ReminderDTO) {
-        TODO("save the reminder")
+        reminders.add(reminder)
     }
 
     override suspend fun getReminder(id: String): Result<ReminderDTO> {
-        TODO("return the reminder with the id")
+        val res = reminders.filter{
+            it.id == id
+        }
+        return if (res.isEmpty()) {
+            Result.Error("No such element with id $id found")
+        } else if (res.size != 1 ) {
+            Result.Error("More than one element with id $id")
+        } else {
+            Result.Success(res[0])
+        }
     }
 
     override suspend fun deleteAllReminders() {
-        TODO("delete all the reminders")
+        reminders.clear()
     }
 
 

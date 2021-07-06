@@ -16,11 +16,9 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 @ExperimentalCoroutinesApi
 class RemindersListViewModelTest {
-
     // provide testing to the RemindersListViewModel and its live data objects
     @get:Rule
     var instantExecutorRule = InstantTaskExecutorRule()
-
 
     @Test
     fun loadReminders_getsStoredReminders() {
