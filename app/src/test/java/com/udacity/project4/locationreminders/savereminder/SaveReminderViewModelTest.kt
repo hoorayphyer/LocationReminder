@@ -19,10 +19,11 @@ import org.hamcrest.MatcherAssert.assertThat
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.koin.test.AutoCloseKoinTest
 
 @ExperimentalCoroutinesApi
 @RunWith(AndroidJUnit4::class)
-class SaveReminderViewModelTest {
+class SaveReminderViewModelTest: AutoCloseKoinTest() {
     // provide testing to the SaveReminderView and its live data objects
     @get:Rule
     var mainCoroutineRule = MainCoroutineRule()
