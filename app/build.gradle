@@ -44,6 +44,19 @@ android {
         viewBinding = true
         dataBinding = true
     }
+
+    // a fix for "2 files found with path 'META-INF/AL2.0' from inputs:"
+    // see https://github.com/Kotlin/kotlinx.coroutines/issues/2023
+    packagingOptions {
+        // for JNA and JNA-platform
+        exclude "META-INF/AL2.0"
+        exclude "META-INF/LGPL2.1"
+        // the following doesn't seem to apply so I'll skip it
+//        // for byte-buddy
+//        exclude "META-INF/licenses/ASM"
+//        pickFirst "win32-x86-64/attach_hotspot_windows.dll"
+//        pickFirst "win32-x86/attach_hotspot_windows.dll"
+    }
 }
 
 dependencies {
