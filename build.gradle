@@ -9,13 +9,13 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.2.1'
+        classpath 'com.android.tools.build:gradle:4.2.2'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
         classpath "androidx.navigation:navigation-safe-args-gradle-plugin:$navigationVersion"
         classpath 'com.google.gms:google-services:4.3.8'
 
         // for managing google maps api key
-        classpath "com.google.android.libraries.mapsplatform.secrets-gradle-plugin:secrets-gradle-plugin:1.2.0"
+        classpath "com.google.android.libraries.mapsplatform.secrets-gradle-plugin:secrets-gradle-plugin:1.3.0"
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
@@ -46,8 +46,8 @@ ext {
     appCompatVersion = '1.3.0'
     archLifecycleVersion = '2.3.1'
     cardVersion = '1.0.0'
-    materialVersion = '1.3.0'
-    fragmentVersion = '1.4.0-alpha03'
+    materialVersion = '1.4.0'
+    fragmentVersion = '1.4.0-alpha04'
     recyclerViewVersion = '1.2.1'
     mockitoVersion = '2.28.2'
     constraintVersion = '2.0.4'
@@ -57,13 +57,13 @@ ext {
     koinVersion = '3.1.2'
     truthVersion = '0.44'
     junitVersion = '4.13.2'
-    androidXTestCoreVersion = '1.4.0-rc01'
-    robolectricVersion = '4.5.1'
-    androidXTestExtKotlinRunnerVersion = '1.1.2'
+    androidXTestCoreVersion = '1.4.0'
+    robolectricVersion = '4.5.1' // should not upgrade to 4.6 because of the following error : Failed to transform '/home/hooray/.gradle/caches/modules-2/files-2.1/org.bouncycastle/bcprov-jdk15on/1.68/46a080368d38b428d237a59458f9bc915222894d/bcprov-jdk15on-1.68.jar' using Jetifier. Reason: IllegalArgumentException, message: Unsupported class file major version 59.
+    androidXTestExtKotlinRunnerVersion = '1.1.3'
     archTestingVersion = '2.1.0'
     playServicesVersion = '18.0.0'
     hamcrestVersion = '1.3'
-    androidXTestRulesVersion = '1.3.0'
-    espressoVersion = '3.3.0'
+    androidXTestRulesVersion = '1.4.0'
+    espressoVersion = '3.4.0'
 
 }
