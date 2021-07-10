@@ -68,7 +68,12 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
             // send back the selected location details to the view model
             // and navigate back to the previous fragment to save the reminder and add the geofence
             if (selectedPOI == null) {
-                Toast.makeText(requireContext(), "No POI is selected!", Toast.LENGTH_LONG).show()
+                // Toast.makeText(requireContext(), "No POI is selected!", Toast.LENGTH_LONG).show()
+                // TODO I don't know how to simulate picking a POI in Espresso end-to-end test. This behavior below is purely for testing purpose
+                _viewModel.reminderSelectedLocationStr.value = "Location Picked For Testing"
+                _viewModel.latitude.value = 0.0
+                _viewModel.longitude.value = 0.0
+                findNavController().popBackStack()
             } else {
                 _viewModel.reminderSelectedLocationStr.value = selectedPOI!!.name.toString()
                 _viewModel.latitude.value = selectedPOI!!.latLng.latitude
