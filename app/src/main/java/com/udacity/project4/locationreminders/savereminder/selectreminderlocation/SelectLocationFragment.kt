@@ -2,12 +2,12 @@ package com.udacity.project4.locationreminders.savereminder.selectreminderlocati
 
 
 import android.Manifest
+import android.annotation.TargetApi
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
 import android.view.*
 import android.widget.Toast
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
 import androidx.navigation.fragment.findNavController
@@ -27,6 +27,8 @@ import org.koin.android.ext.android.inject
 
 class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     //Use Koin to get the view model of the SaveReminder
+    private val runningQOrLater =
+        android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q
     override val _viewModel: SaveReminderViewModel by inject()
     private lateinit var binding: FragmentSelectLocationBinding
     private lateinit var map: GoogleMap
@@ -35,10 +37,14 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
 
     private var locationPermissionGranted = false
-    private var selectedPOI : PointOfInterest? = null
+    private var selectedPOI: PointOfInterest? = null
 
     companion object {
-        private const val PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1
+        // some constants related in location permission handling
+        private const val REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE = 33
+        private const val REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE = 34
+        private const val LOCATION_PERMISSION_INDEX = 0
+        private const val BACKGROUND_LOCATION_PERMISSION_INDEX = 1
     }
 
     override fun onCreateView(
@@ -116,6 +122,93 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         // Prompt the user for permission.
         getLocationPermission()
 
+        if (locationPermissionGranted) {
+            prepareGoogleMap()
+        }
+    }
+
+    /**
+     * Prompts the user for permission to use the device location.
+     */
+    @TargetApi(29)
+    private fun getLocationPermission() {
+        /*
+        * Request location permission, so that we can get the location of the
+        * device. The result of the permission request is handled by a callback,
+        * onRequestPermissionsResult.
+        */
+
+        val foregroundLocationApproved = (
+                PackageManager.PERMISSION_GRANTED ==
+                        ContextCompat.checkSelfPermission(
+                            requireContext(),
+                            Manifest.permission.ACCESS_FINE_LOCATION
+                        ))
+        val backgroundPermissionApproved =
+            if (runningQOrLater) {
+                PackageManager.PERMISSION_GRANTED ==
+                        ContextCompat.checkSelfPermission(
+                            requireContext(), Manifest.permission.ACCESS_BACKGROUND_LOCATION
+                        )
+            } else {
+                true
+            }
+
+        locationPermissionGranted = foregroundLocationApproved && backgroundPermissionApproved
+
+        if (locationPermissionGranted) {
+            return
+        }
+
+        var permissionsArray = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
+        val resultCode = when {
+            runningQOrLater -> {
+                permissionsArray += Manifest.permission.ACCESS_BACKGROUND_LOCATION
+                REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE
+            }
+            else -> REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE
+        }
+
+        // don't use ActivityCompat.requestPermissions here. Use the fragment's requestPermissions
+        // requestPermissions is deprecated. See here for alternative https://developer.android.com/reference/androidx/fragment/app/Fragment#registerForActivityResult(androidx.activity.result.contract.ActivityResultContract%3CI,%20O%3E,%20androidx.activity.result.ActivityResultCallback%3CO%3E)
+        requestPermissions(
+            permissionsArray,
+            resultCode
+        )
+    }
+
+    /**
+     * Handles the result of the request for location permissions.
+     */
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        if (
+            grantResults.isEmpty() ||
+            grantResults[LOCATION_PERMISSION_INDEX] == PackageManager.PERMISSION_DENIED ||
+            (requestCode == REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE &&
+                    grantResults[BACKGROUND_LOCATION_PERMISSION_INDEX] ==
+                    PackageManager.PERMISSION_DENIED)
+        ) {
+            locationPermissionGranted = false
+            Toast.makeText(
+                requireContext(),
+                "LocationReminder must be granted location permission at all times to function properly!",
+                Toast.LENGTH_LONG
+            )
+                .show()
+        } else {
+            locationPermissionGranted = true;
+        }
+
+        if (locationPermissionGranted) {
+            prepareGoogleMap()
+        }
+    }
+
+    private fun prepareGoogleMap() {
         // Turn on the My Location layer and the related control on the map.
         updateMapUISettings()
 
@@ -126,7 +219,8 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
             // put a marker to location that the user selected
             map.addMarker(MarkerOptions().position(it))
 
-            Toast.makeText(requireContext(), "Click on a POI to set a reminder", Toast.LENGTH_LONG).show()
+            Toast.makeText(requireContext(), "Click on a POI to set a reminder", Toast.LENGTH_LONG)
+                .show()
         }
 
         map.setOnPoiClickListener { poi ->
@@ -139,54 +233,6 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
             selectedPOI = poi
         }
-    }
-
-    /**
-     * Prompts the user for permission to use the device location.
-     */
-    private fun getLocationPermission() {
-        /*
-        * Request location permission, so that we can get the location of the
-        * device. The result of the permission request is handled by a callback,
-        * onRequestPermissionsResult.
-        */
-        if (ContextCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION
-            )
-            == PackageManager.PERMISSION_GRANTED
-        ) {
-            locationPermissionGranted = true
-        } else {
-            ActivityCompat.requestPermissions(
-                requireActivity(), arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION
-            )
-        }
-
-    }
-
-    /**
-     * Handles the result of the request for location permissions.
-     */
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
-        locationPermissionGranted = false
-        when (requestCode) {
-            PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION -> {
-
-                // If request is cancelled, the result arrays are empty.
-                if (grantResults.isNotEmpty() &&
-                    grantResults[0] == PackageManager.PERMISSION_GRANTED
-                ) {
-                    locationPermissionGranted = true
-                }
-            }
-        }
-        updateMapUISettings()
     }
 
     /**
@@ -207,7 +253,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     /**
      * Gets the current location of the device, and positions the map's camera.
      */
-    private fun getDeviceLocation(callback : (LatLng) -> Unit) {
+    private fun getDeviceLocation(callback: (LatLng) -> Unit) {
         /*
          * Get the best and most recent location of the device, which may be null in rare
          * cases when a location is not available.
