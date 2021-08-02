@@ -27,8 +27,6 @@ import org.koin.android.ext.android.inject
 
 class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     //Use Koin to get the view model of the SaveReminder
-    private val runningQOrLater =
-        android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q
     override val _viewModel: SaveReminderViewModel by inject()
     private lateinit var binding: FragmentSelectLocationBinding
     private lateinit var map: GoogleMap
@@ -36,15 +34,11 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     // The entry point to the Fused Location Provider.
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
 
-    private var locationPermissionGranted = false
+    private var foregroundLocationApproved = false
     private var selectedPOI: PointOfInterest? = null
 
     companion object {
-        // some constants related in location permission handling
-        private const val REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE = 33
         private const val REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE = 34
-        private const val LOCATION_PERMISSION_INDEX = 0
-        private const val BACKGROUND_LOCATION_PERMISSION_INDEX = 1
     }
 
     override fun onCreateView(
@@ -122,7 +116,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         // Prompt the user for permission.
         getLocationPermission()
 
-        if (locationPermissionGranted) {
+        if (foregroundLocationApproved) {
             prepareGoogleMap()
         }
     }
@@ -138,42 +132,21 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         * onRequestPermissionsResult.
         */
 
-        val foregroundLocationApproved = (
+        foregroundLocationApproved = (
                 PackageManager.PERMISSION_GRANTED ==
                         ContextCompat.checkSelfPermission(
                             requireContext(),
                             Manifest.permission.ACCESS_FINE_LOCATION
                         ))
-        val backgroundPermissionApproved =
-            if (runningQOrLater) {
-                PackageManager.PERMISSION_GRANTED ==
-                        ContextCompat.checkSelfPermission(
-                            requireContext(), Manifest.permission.ACCESS_BACKGROUND_LOCATION
-                        )
-            } else {
-                true
-            }
-
-        locationPermissionGranted = foregroundLocationApproved && backgroundPermissionApproved
-
-        if (locationPermissionGranted) {
+        if (foregroundLocationApproved) {
             return
-        }
-
-        var permissionsArray = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
-        val resultCode = when {
-            runningQOrLater -> {
-                permissionsArray += Manifest.permission.ACCESS_BACKGROUND_LOCATION
-                REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE
-            }
-            else -> REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE
         }
 
         // don't use ActivityCompat.requestPermissions here. Use the fragment's requestPermissions
         // requestPermissions is deprecated. See here for alternative https://developer.android.com/reference/androidx/fragment/app/Fragment#registerForActivityResult(androidx.activity.result.contract.ActivityResultContract%3CI,%20O%3E,%20androidx.activity.result.ActivityResultCallback%3CO%3E)
         requestPermissions(
-            permissionsArray,
-            resultCode
+            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+            REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE
         )
     }
 
@@ -185,25 +158,10 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         permissions: Array<String>,
         grantResults: IntArray
     ) {
-        if (
-            grantResults.isEmpty() ||
-            grantResults[LOCATION_PERMISSION_INDEX] == PackageManager.PERMISSION_DENIED ||
-            (requestCode == REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE &&
-                    grantResults[BACKGROUND_LOCATION_PERMISSION_INDEX] ==
-                    PackageManager.PERMISSION_DENIED)
-        ) {
-            locationPermissionGranted = false
-            Toast.makeText(
-                requireContext(),
-                "LocationReminder must be granted location permission at all times to function properly!",
-                Toast.LENGTH_LONG
-            )
-                .show()
-        } else {
-            locationPermissionGranted = true;
-        }
+        foregroundLocationApproved = !(grantResults.isEmpty() ||
+                grantResults[0] == PackageManager.PERMISSION_DENIED)
 
-        if (locationPermissionGranted) {
+        if (foregroundLocationApproved) {
             prepareGoogleMap()
         }
     }
@@ -240,11 +198,8 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
      */
     private fun updateMapUISettings() {
         try {
-            map.isMyLocationEnabled = locationPermissionGranted
-            map.uiSettings.isMyLocationButtonEnabled = locationPermissionGranted
-            if (!locationPermissionGranted) {
-                getLocationPermission()
-            }
+            map.isMyLocationEnabled = foregroundLocationApproved
+            map.uiSettings.isMyLocationButtonEnabled = foregroundLocationApproved
         } catch (e: SecurityException) {
             Log.e("Exception: %s", e.message, e)
         }
@@ -258,7 +213,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
          * Get the best and most recent location of the device, which may be null in rare
          * cases when a location is not available.
          */
-        require(locationPermissionGranted) {
+        require(foregroundLocationApproved) {
             "location permission not granted"
         }
         try {
