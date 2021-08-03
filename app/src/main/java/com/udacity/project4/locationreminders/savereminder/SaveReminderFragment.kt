@@ -133,6 +133,9 @@ class SaveReminderFragment : BaseFragment() {
             // Set the transition types of interest. Alerts are only generated for these
             // transition.
             .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
+            // Use a larger responsiveness to reduce power consumption. Unit is ms
+            // See https://developer.android.com/training/location/geofencing.html#reduce-power-consumption
+            .setNotificationResponsiveness(300000)
 
             // Create the geofence.
             .build()
