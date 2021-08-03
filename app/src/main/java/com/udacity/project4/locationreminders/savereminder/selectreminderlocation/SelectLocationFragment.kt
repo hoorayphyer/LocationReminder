@@ -25,6 +25,7 @@ import com.udacity.project4.databinding.FragmentSelectLocationBinding
 import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
 import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
 import org.koin.android.ext.android.inject
+import java.util.*
 
 class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     //Use Koin to get the view model of the SaveReminder
@@ -36,7 +37,11 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
 
     private var foregroundLocationApproved = false
-    private var selectedPOI: PointOfInterest? = null
+
+    private var selectedLocName: String = ""
+    private var selectedLocLat: Double = 0.0
+    private var selectedLocLng: Double = 0.0
+    private var activeMarker : Marker? = null
 
     companion object {
         private const val REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE = 34
@@ -68,7 +73,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
             // When the user confirms on the selected location,
             // send back the selected location details to the view model
             // and navigate back to the previous fragment to save the reminder and add the geofence
-            if (selectedPOI == null) {
+            if (selectedLocName.isEmpty()) {
                 // Toast.makeText(requireContext(), "No POI is selected!", Toast.LENGTH_LONG).show()
                 // TODO I don't know how to simulate picking a POI in Espresso end-to-end test. This behavior below is purely for testing purpose
                 _viewModel.reminderSelectedLocationStr.value = "Location Picked For Testing"
@@ -76,9 +81,9 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
                 _viewModel.longitude.value = 0.0
                 findNavController().popBackStack()
             } else {
-                _viewModel.reminderSelectedLocationStr.value = selectedPOI!!.name.toString()
-                _viewModel.latitude.value = selectedPOI!!.latLng.latitude
-                _viewModel.longitude.value = selectedPOI!!.latLng.longitude
+                _viewModel.reminderSelectedLocationStr.value = selectedLocName
+                _viewModel.latitude.value = selectedLocLat
+                _viewModel.longitude.value = selectedLocLng
                 findNavController().popBackStack()
             }
         }
@@ -176,23 +181,11 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
             val zoomLevel = 15f
             map.moveCamera(CameraUpdateFactory.newLatLngZoom(it, zoomLevel))
             // put a marker to location that the user selected
-            map.addMarker(MarkerOptions().position(it))
-
-            Toast.makeText(requireContext(), "Click on a POI to set a reminder", Toast.LENGTH_LONG)
-                .show()
+            activeMarker?.remove()
+            activeMarker = map.addMarker(MarkerOptions().position(it))
         }
-
-        map.setOnPoiClickListener { poi ->
-            val poiMarker = map.addMarker(
-                MarkerOptions()
-                    .position(poi.latLng)
-                    .title(poi.name)
-            )
-            poiMarker.showInfoWindow()
-
-            selectedPOI = poi
-        }
-
+        setMapLongClick(map)
+        setPOIClick(map)
         setMapStyle(map)
     }
 
@@ -236,6 +229,46 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
             Log.e("Exception: %s", e.message, e)
         }
     }
+
+    private fun setMapLongClick(map: GoogleMap) {
+        map.setOnMapLongClickListener { latLng ->
+            // A Snippet is Additional text that's displayed below the title.
+            val snippet = String.format(
+                Locale.getDefault(),
+                "Lat: %1$.5f, Long: %2$.5f",
+                latLng.latitude,
+                latLng.longitude
+            )
+            selectedLocName = "Custom Location"
+            selectedLocLat = latLng.latitude
+            selectedLocLng = latLng.longitude
+
+            activeMarker?.remove()
+            activeMarker = map.addMarker(
+                MarkerOptions()
+                    .position(latLng)
+                    .title(selectedLocName)
+                    .snippet(snippet)
+            )
+        }
+    }
+
+    private fun setPOIClick(map: GoogleMap) {
+        map.setOnPoiClickListener { poi ->
+            activeMarker?.remove()
+            activeMarker = map.addMarker(
+                MarkerOptions()
+                    .position(poi.latLng)
+                    .title(poi.name)
+            )
+            activeMarker?.showInfoWindow()
+
+            selectedLocName = poi.name
+            selectedLocLat = poi.latLng.latitude
+            selectedLocLng = poi.latLng.longitude
+        }
+    }
+
 
     private fun setMapStyle(map: GoogleMap) {
         val tag = SelectLocationFragment::class.java.simpleName
