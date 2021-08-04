@@ -81,6 +81,8 @@ class ReminderListFragment : BaseFragment() {
                 val intent = Intent(requireContext(), AuthenticationActivity::class.java)
                 startActivity(intent)
                 Toast.makeText(requireContext(), "You've logged out!", Toast.LENGTH_SHORT).show()
+                // the following line is necessary to prevent hitting back button and going back to this activity after the user logs out
+                requireActivity().finish()
             }
         }
         return super.onOptionsItemSelected(item)
