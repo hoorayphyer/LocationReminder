@@ -3,6 +3,7 @@ package com.udacity.project4.locationreminders.reminderslist
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.udacity.project4.locationreminders.MainCoroutineRule
 import com.udacity.project4.locationreminders.data.FakeDataSource
 import com.udacity.project4.locationreminders.data.dto.ReminderDTO
 import com.udacity.project4.locationreminders.getOrAwaitValue
@@ -19,6 +20,9 @@ class RemindersListViewModelTest {
     // provide testing to the RemindersListViewModel and its live data objects
     @get:Rule
     var instantExecutorRule = InstantTaskExecutorRule()
+
+    @get:Rule
+    var mainCoroutineRule = MainCoroutineRule()
 
     @Test
     fun loadReminders_getsStoredReminders() {
@@ -46,4 +50,27 @@ class RemindersListViewModelTest {
         }
     }
 
+    @Test
+    fun loadReminders_checkLoading() {
+        // Given a fresh ViewModel
+
+        val reminders = MutableList(4) { index ->
+            ReminderDTO("title$index","description$index","location$index", index.toDouble(), -index.toDouble())
+        }
+
+        val dataSource = FakeDataSource(reminders)
+        val viewModel = RemindersListViewModel(ApplicationProvider.getApplicationContext(), dataSource)
+
+        // Perform the action under testing
+        // we want to test loading is shown before the coroutine starts, hence the pauseDispatcher()
+        mainCoroutineRule.pauseDispatcher()
+        viewModel.loadReminders()
+
+        // Test results
+        assertThat( viewModel.showLoading.getOrAwaitValue(), `is`(true) )
+
+        // now we want to see that the loading goes away after the coroutine in viewModelloadReminders() finishes
+        mainCoroutineRule.resumeDispatcher()
+        assertThat( viewModel.showLoading.getOrAwaitValue(), `is`(false) )
+    }
 }
