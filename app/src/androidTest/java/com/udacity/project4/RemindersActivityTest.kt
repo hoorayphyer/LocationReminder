@@ -8,6 +8,7 @@ import androidx.test.espresso.IdlingRegistry
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.action.ViewActions.replaceText
 import androidx.test.espresso.assertion.ViewAssertions.matches
+import androidx.test.espresso.matcher.RootMatchers.withDecorView
 import androidx.test.espresso.matcher.ViewMatchers.*
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
@@ -21,6 +22,8 @@ import com.udacity.project4.util.DataBindingIdlingResource
 import com.udacity.project4.util.monitorActivity
 import com.udacity.project4.utils.EspressoIdlingResource
 import kotlinx.coroutines.runBlocking
+import org.hamcrest.CoreMatchers.`is`
+import org.hamcrest.CoreMatchers.not
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -122,12 +125,21 @@ class RemindersActivityTest :
 
         onView(withId(R.id.confirmButton)).perform(click())
 
-        // TODO this action fails, don't know why
         onView(withId(R.id.saveReminder)).perform(click())
 
-//        onView(withId(R.id.noDataTextView)).check(matches(not(isDisplayed())))
+        // TODO the following fails, but instead the check without `not` passes. I think this is because databinding is not done
+        // when this test is performed.
+        // There is a post that I think may be relevant: https://medium.com/android-news/espresso-ui-test-for-data-binding-dbe988d97340
+        // onView(withId(R.id.noDataTextView)).check(matches(not(isDisplayed())))
+
+        // the following checks that a TOAST message is shown
+        activityScenario.onActivity {
+           onView(withText(R.string.reminder_saved)).inRoot(withDecorView(not(`is`(it.window.decorView)))).check(matches(isDisplayed()));
+        }
 
 
+        // the following checks that a snackbar message is shown
+        onView(withId(com.google.android.material.R.id.snackbar_text)).check(matches(isDisplayed()))
 
         // Make sure the activity is closed before resetting the db:
         activityScenario.close()
