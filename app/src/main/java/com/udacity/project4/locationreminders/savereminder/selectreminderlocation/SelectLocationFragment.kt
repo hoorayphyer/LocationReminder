@@ -6,6 +6,7 @@ import android.content.res.Resources
 import android.os.Bundle
 import android.util.Log
 import android.view.*
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
@@ -87,12 +88,8 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
             // send back the selected location details to the view model
             // and navigate back to the previous fragment to save the reminder and add the geofence
             if (selectedLocName.isEmpty()) {
-                // Toast.makeText(requireContext(), "No POI is selected!", Toast.LENGTH_LONG).show()
-                // TODO I don't know how to simulate picking a POI in Espresso end-to-end test. This behavior below is purely for testing purpose
-                _viewModel.reminderSelectedLocationStr.value = "Location Picked For Testing"
-                _viewModel.latitude.value = 0.0
-                _viewModel.longitude.value = 0.0
-                findNavController().popBackStack()
+                Toast.makeText(requireContext(), "No location is selected!", Toast.LENGTH_LONG)
+                    .show()
             } else {
                 _viewModel.reminderSelectedLocationStr.value = selectedLocName
                 _viewModel.latitude.value = selectedLocLat
