@@ -47,6 +47,14 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (!granted) {
+                Toast.makeText(
+                    requireContext(),
+                    "Foreground location permission is NOT granted!",
+                    Toast.LENGTH_LONG
+                )
+                    .show()
+            }
             doThisWithForegroundLocationPermission(granted)
         }
 
