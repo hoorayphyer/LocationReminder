@@ -1,24 +1,24 @@
 package com.udacity.project4.locationreminders.savereminder.selectreminderlocation
 
-
 import android.Manifest
-import android.annotation.TargetApi
 import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.os.Bundle
 import android.util.Log
 import android.view.*
-import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
 import androidx.navigation.fragment.findNavController
 import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
+import com.google.android.gms.tasks.CancellationTokenSource
 import com.udacity.project4.R
 import com.udacity.project4.base.BaseFragment
 import com.udacity.project4.databinding.FragmentSelectLocationBinding
@@ -36,15 +36,28 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     // The entry point to the Fused Location Provider.
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
 
-    private var foregroundLocationApproved = false
-
     private var selectedLocName: String = ""
     private var selectedLocLat: Double = 0.0
     private var selectedLocLng: Double = 0.0
-    private var activeMarker : Marker? = null
+    private var activeMarker: Marker? = null
 
-    companion object {
-        private const val REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE = 34
+    // used in fusedLocationProviderClient.getCurrentLocation
+    private lateinit var cancellationSource: CancellationTokenSource
+
+    private val requestPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            doThisWithForegroundLocationPermission(granted)
+        }
+
+    override fun onStart() {
+        super.onStart()
+        // Typically use one cancellation source per lifecycle.
+        cancellationSource = CancellationTokenSource()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        cancellationSource.cancel()
     }
 
     override fun onCreateView(
@@ -116,74 +129,49 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         else -> super.onOptionsItemSelected(item)
     }
 
+    private fun selectLocation(name: String, lat: Double, lng: Double) {
+        selectedLocName = name
+        selectedLocLat = lat
+        selectedLocLng = lng
+    }
+
     override fun onMapReady(googleMap: GoogleMap) {
         map = googleMap
 
-        // Prompt the user for permission.
-        getLocationPermission()
-
-        if (foregroundLocationApproved) {
-            prepareGoogleMap()
-        }
-    }
-
-    /**
-     * Prompts the user for permission to use the device location.
-     */
-    @TargetApi(29)
-    private fun getLocationPermission() {
         /*
         * Request location permission, so that we can get the location of the
         * device. The result of the permission request is handled by a callback,
         * onRequestPermissionsResult.
         */
-
-        foregroundLocationApproved = (
-                PackageManager.PERMISSION_GRANTED ==
-                        ContextCompat.checkSelfPermission(
-                            requireContext(),
-                            Manifest.permission.ACCESS_FINE_LOCATION
-                        ))
-        if (foregroundLocationApproved) {
-            return
-        }
-
-        // don't use ActivityCompat.requestPermissions here. Use the fragment's requestPermissions
-        // requestPermissions is deprecated. See here for alternative https://developer.android.com/reference/androidx/fragment/app/Fragment#registerForActivityResult(androidx.activity.result.contract.ActivityResultContract%3CI,%20O%3E,%20androidx.activity.result.ActivityResultCallback%3CO%3E)
-        requestPermissions(
-            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-            REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE
-        )
-    }
-
-    /**
-     * Handles the result of the request for location permissions.
-     */
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
-        foregroundLocationApproved = !(grantResults.isEmpty() ||
-                grantResults[0] == PackageManager.PERMISSION_DENIED)
-
-        if (foregroundLocationApproved) {
-            prepareGoogleMap()
+        if (
+            PackageManager.PERMISSION_GRANTED ==
+            ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION
+            )
+        ) {
+            doThisWithForegroundLocationPermission(true)
+        } else {
+            requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
         }
     }
 
-    private fun prepareGoogleMap() {
-        // Turn on the My Location layer and the related control on the map.
-        updateMapUISettings()
+    private fun doThisWithForegroundLocationPermission(granted: Boolean) {
+        if (granted) {
+            // Move camera to the current location of the device and set the position of the map.
+            getDeviceLocation {
+                val zoomLevel = 15f
+                map.moveCamera(CameraUpdateFactory.newLatLngZoom(it, zoomLevel))
 
-        // Move camera to the current location of the device and set the position of the map.
-        getDeviceLocation {
-            val zoomLevel = 15f
-            map.moveCamera(CameraUpdateFactory.newLatLngZoom(it, zoomLevel))
-            // put a marker to location that the user selected
-            activeMarker?.remove()
-            activeMarker = map.addMarker(MarkerOptions().position(it))
+                selectLocation("Default Current Location", it.latitude, it.longitude)
+                // put a marker to location that the user selected
+                activeMarker?.remove()
+                activeMarker = map.addMarker(MarkerOptions().position(it))
+            }
+        } else {
+            updateMapUISettings(false)
         }
+
         setMapLongClick(map)
         setPOIClick(map)
         setMapStyle(map)
@@ -192,10 +180,10 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     /**
      * Updates the map's UI settings based on whether the user has granted location permission.
      */
-    private fun updateMapUISettings() {
+    private fun updateMapUISettings(granted: Boolean) {
         try {
-            map.isMyLocationEnabled = foregroundLocationApproved
-            map.uiSettings.isMyLocationButtonEnabled = foregroundLocationApproved
+            map.isMyLocationEnabled = granted
+            map.uiSettings.isMyLocationButtonEnabled = granted
         } catch (e: SecurityException) {
             Log.e("Exception: %s", e.message, e)
         }
@@ -209,21 +197,20 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
          * Get the best and most recent location of the device, which may be null in rare
          * cases when a location is not available.
          */
-        require(foregroundLocationApproved) {
-            "location permission not granted"
-        }
         try {
-            val locationResult = fusedLocationProviderClient.lastLocation
+            val locationResult = fusedLocationProviderClient.getCurrentLocation(
+                LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY,
+                cancellationSource.token
+            )
             locationResult.addOnCompleteListener(requireActivity()) { task ->
-                var latLng = LatLng(37.422160, -122.084270)
                 if (task.isSuccessful && task.result != null) {
                     // return the current location of the device.
-                    latLng = LatLng(task.result.latitude, task.result.longitude)
+                    val latLng = LatLng(task.result.latitude, task.result.longitude)
+                    updateMapUISettings(true)
+                    callback(latLng)
                 } else {
-                    map.uiSettings.isMyLocationButtonEnabled = false
+                    updateMapUISettings(false)
                 }
-
-                callback(latLng)
             }
         } catch (e: SecurityException) {
             Log.e("Exception: %s", e.message, e)
@@ -239,9 +226,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
                 latLng.latitude,
                 latLng.longitude
             )
-            selectedLocName = "Custom Location"
-            selectedLocLat = latLng.latitude
-            selectedLocLng = latLng.longitude
+            selectLocation("Custom Location", latLng.latitude, latLng.longitude)
 
             activeMarker?.remove()
             activeMarker = map.addMarker(
@@ -263,9 +248,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
             )
             activeMarker?.showInfoWindow()
 
-            selectedLocName = poi.name
-            selectedLocLat = poi.latLng.latitude
-            selectedLocLng = poi.latLng.longitude
+            selectLocation(poi.name, poi.latLng.latitude, poi.latLng.longitude)
         }
     }
 
