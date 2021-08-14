@@ -1,5 +1,6 @@
 package com.udacity.project4
 
+import android.app.Activity
 import android.app.Application
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
@@ -167,19 +168,27 @@ class RemindersActivityTest :
         onView(withId(R.id.confirmButton)).perform(click())
         onView(withId(R.id.saveReminder)).perform(click())
 
+        Thread.sleep(1000)
+        // the following checks that a TOAST message is shown
+        onView(withText(R.string.reminder_saved)).inRoot(withDecorView(not(`is`(getActivity(activityScenario)!!.window.decorView))))
+            .check( matches( isDisplayed() ) )
+
         // TODO this is a hack to make the following check work. I'm missing some IdlingResouces deployment somewhere around long time operations. I tried looking at the clickListener in the saveReminder button but couldn't identify any. I suspect those services were involved but I don't know how to confirm that.
-        Thread.sleep(10000)
+        Thread.sleep(2000)
 
         // There is a post that I think may be relevant: https://medium.com/android-news/espresso-ui-test-for-data-binding-dbe988d97340
         onView(withId(R.id.noDataTextView)).check(matches(not(isDisplayed())))
 
-        // the following checks that a TOAST message is shown
-        // TODO this is supposed to be a toast message test, but when run it hangs. Don't know why. One difficulty is how to get the activity from activityScenario. The following way is what I found online.
-//        activityScenario.onActivity {
-//           onView(withText(R.string.reminder_saved)).inRoot(withDecorView(not(`is`(it.window.decorView)))).check(matches(isDisplayed()));
-//        }
-
         // Make sure the activity is closed before resetting the db:
         activityScenario.close()
+    }
+
+    // get activity context
+    private fun getActivity(activityScenario: ActivityScenario<RemindersActivity>): Activity? {
+        var activity: Activity? = null
+        activityScenario.onActivity {
+            activity = it
+        }
+        return activity
     }
 }
