@@ -112,6 +112,7 @@ class SaveReminderFragment : BaseFragment() {
         return binding.root
     }
 
+    @TargetApi(29)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.lifecycleOwner = this
@@ -161,7 +162,7 @@ class SaveReminderFragment : BaseFragment() {
     private fun createGeofenceRequest(
         reminder: ReminderDataItem
     ): GeofencingRequest {
-        val requestID = System.currentTimeMillis().toString()
+        val requestID = reminder.id
         val longitude = reminder.longitude!!
         val latitude = reminder.latitude!!
 
