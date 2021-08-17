@@ -163,6 +163,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
     private fun doThisWithForegroundLocationPermission(granted: Boolean) {
         if (granted) {
+            updateMapUISettings(true)
             // Move camera to the current location of the device and set the position of the map.
             getDeviceLocation {
                 val zoomLevel = 15f
@@ -211,10 +212,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
                 if (task.isSuccessful && task.result != null) {
                     // return the current location of the device.
                     val latLng = LatLng(task.result.latitude, task.result.longitude)
-                    updateMapUISettings(true)
                     callback(latLng)
-                } else {
-                    updateMapUISettings(false)
                 }
             }
         } catch (e: SecurityException) {
